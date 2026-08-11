@@ -1,0 +1,287 @@
+/* Cinematic footer: full-bleed grown-tree still, ghosted brand wordmark,
+   link columns floating over a dark scrim. */
+
+.footer {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw); /* break out of any centred parent */
+  overflow: hidden;
+  isolation: isolate;
+  color: #e9ecdf;
+  padding: 96px 0 0;
+}
+
+/* ------------------------------------------------------------- background */
+.bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.bgImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  /* The source frame is bright daylight; push it dark and green so white text
+     sits comfortably on top, the way the reference footer does. */
+  filter: brightness(0.34) saturate(0.85) contrast(1.06);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(10, 16, 9, 0.94) 0%, rgba(10, 16, 9, 0.55) 26%, rgba(8, 13, 7, 0.82) 72%, rgba(6, 10, 5, 0.97) 100%),
+    radial-gradient(80% 60% at 50% 100%, rgba(119, 146, 68, 0.18), transparent 70%);
+}
+
+/* ---------------------------------------------------------------- content */
+.inner {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.topRule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(233, 236, 223, 0.22), transparent);
+  margin-bottom: 56px;
+}
+
+/* Company on the left, socials on the right, pushed to the outer edges the way
+   the reference spreads its columns across the full width. */
+.columns {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.col {
+  min-width: 0;
+}
+
+.colHeading {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.linkList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.link {
+  font-size: 14px;
+  color: rgba(233, 236, 223, 0.62);
+  transition: color 0.22s ease, transform 0.22s ease;
+  display: inline-block;
+  width: fit-content;
+}
+
+.link:hover {
+  color: #fff;
+  transform: translateX(3px);
+}
+
+.contactLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  color: rgba(233, 236, 223, 0.62);
+  transition: color 0.22s ease, transform 0.22s ease;
+  width: fit-content;
+}
+
+.contactLink svg {
+  color: rgba(169, 196, 108, 0.85);
+  flex-shrink: 0;
+  transition: color 0.22s ease;
+}
+
+.contactLink:hover {
+  color: #fff;
+  transform: translateX(3px);
+}
+
+.contactLink:hover svg {
+  color: #b7dd7a;
+}
+
+/* ----------------------------------------------------------- social block */
+.socialBlock {
+  justify-self: start;
+}
+
+.socialRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.socialBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(233, 236, 223, 0.82);
+  background: rgba(233, 236, 223, 0.09);
+  border: 1px solid rgba(233, 236, 223, 0.14);
+  transition: background 0.24s ease, color 0.24s ease, transform 0.24s ease,
+    border-color 0.24s ease;
+}
+
+.socialBtn:hover {
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: #0a1009;
+  transform: translateY(-3px);
+}
+
+.socialBtn svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
+/* -------------------------------------------------------------- wordmark */
+.wordmark {
+  margin-top: 88px;
+  /* Clipped at the baseline like the reference — the mark bleeds off the
+     bottom of the section rather than sitting neatly inside it. */
+  height: clamp(90px, 15vw, 210px);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* The logo PNG is used as a MASK, not an image: we paint one flat colour and
+   let the logo's alpha channel cut its shape out of it. That renders the
+   letters, seed and leaves in a single tone instead of the logo's three
+   colours — over the dark backdrop it composites to a soft olive.
+   Change --wordmark-tint alone to retint the whole mark. */
+.wordmarkImg {
+  /* Light sage. Over the dark backdrop at the opacity below this composites to
+     a soft olive, keeping a green identity. A cream (#f4f1e6) desaturates to
+     flat grey here — light neutrals lose their warmth at partial opacity. */
+  --wordmark-tint: #cfd6a4;
+
+  width: 100%;
+  max-width: 1160px;
+  aspect-ratio: 1903 / 826; /* intrinsic ratio of sproutt-logo-2.png */
+  background-color: var(--wordmark-tint);
+  opacity: 0.4;
+  user-select: none;
+
+  -webkit-mask-image: url("/sproutt-logo-2.png");
+  mask-image: url("/sproutt-logo-2.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: top center;
+  mask-position: top center;
+}
+
+/* ------------------------------------------------------------- bottom bar */
+.bottomBar {
+  position: relative;
+  border-top: 1px solid rgba(233, 236, 223, 0.12);
+  margin-top: 8px;
+  padding: 22px 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: rgba(233, 236, 223, 0.5);
+}
+
+.bottomLinks {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.bottomLink {
+  color: rgba(233, 236, 223, 0.5);
+  transition: color 0.22s ease;
+}
+
+.bottomLink:hover {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ------------------------------------------------------------ responsive */
+@media (max-width: 900px) {
+  .footer {
+    padding-top: 72px;
+  }
+
+  .inner {
+    padding: 0 28px;
+  }
+
+  .columns {
+    gap: 40px;
+  }
+
+  .wordmark {
+    margin-top: 64px;
+  }
+}
+
+@media (max-width: 560px) {
+  .columns {
+    flex-direction: column;
+    gap: 34px;
+  }
+
+  .topRule {
+    margin-bottom: 40px;
+  }
+
+  .bottomBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .bottomLinks {
+    gap: 20px;
+  }
+
+  .wordmarkImg {
+    opacity: 0.24;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link,
+  .socialBtn {
+    transition: none;
+  }
+
+  .link:hover,
+  .socialBtn:hover {
+    transform: none;
+  }
+}

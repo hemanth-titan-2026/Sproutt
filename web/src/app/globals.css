@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;700&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap');
+@import 'tailwindcss';
+
+:root {
+
+  /* Brand Colors adapted from reference */
+  --color-primary: #2C4A25; /* Dark Green */
+  --color-secondary: #779244; /* Leaf Green */
+  --color-accent: #8C7051; /* Earth Brown */
+  --color-background: rgb(255, 255, 255); /* White */
+  --color-support-beige: #EAE5D9; 
+  --color-support-moss: #556B2F; 
+  --color-support-gray: #8F9779; 
+  
+  --color-text: #1F2E1E;
+  --color-text-muted: #536350;
+  
+  --font-sans: 'Outfit', sans-serif;
+  --font-serif: 'Lora', serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #121812; 
+    --color-text: #F4F1E6;
+    --color-text-muted: #A3B1A0;
+    --color-primary: #4C7D41;
+    --color-support-beige: #1F281E;
+  }
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  color: var(--color-text);
+  background: var(--color-background);
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+
+  /* Custom sprout cursor. The two numbers are the hotspot — the pixel that
+     actually points — set near the leaf tip so it behaves like an arrow.
+     The trailing keyword is the fallback if the image can't load. */
+  cursor: url("/sproutt-cursor.png") 8 6, auto;
+}
+
+/* A custom cursor throws away the pointing-hand affordance, so interactive
+   elements get a ringed variant to put it back. */
+a,
+button,
+summary,
+select,
+label,
+[role="button"],
+[role="menuitem"] {
+  cursor: url("/sproutt-cursor-pointer.png") 11 8, pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Text fields keep the I-beam — losing it makes editing feel broken. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]),
+textarea {
+  cursor: text;
+}
+
+/* Touch devices have no cursor to style, and coarse pointers get no benefit. */
+@media (hover: none), (pointer: coarse) {
+  body,
+  a,
+  button,
+  summary,
+  select,
+  label,
+  [role="button"],
+  [role="menuitem"] {
+    cursor: auto;
+  }
+}
+
+/* Once the animated cursor mounts it adds this class and takes over, hiding the
+   native pointer. The class is set from JS, so if JS fails the static cursor
+   above still applies — the page is never left with no pointer at all.
+   Text fields keep their caret so typing doesn't feel broken. */
+html.sproutt-cursor-active,
+html.sproutt-cursor-active * {
+  cursor: none !important;
+}
+
+html.sproutt-cursor-active input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]),
+html.sproutt-cursor-active textarea {
+  cursor: text !important;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* Lenis Scroll specific classes */
+html.lenis {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  background: rgba(253, 252, 248, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass {
+    background: rgba(13, 20, 16, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  }
+}
