@@ -27,8 +27,9 @@ export default function CanvasSequence() {
     const context = canvas.getContext("2d");
     const frames = new Array(FRAME_COUNT).fill(null);
     let imagesLoaded = 0;
-    let scrollTriggerInit = false;
+    let animationStarted = false;
     let sequence = { frame: 0 };
+    let lastDrawnFrame = -1;
 
     const updateDimensions = () => {
       canvas.width = window.innerWidth;
@@ -83,7 +84,7 @@ export default function CanvasSequence() {
       if (loaderRef.current) {
         gsap.to(loaderRef.current, {
           opacity: 0,
-          duration: 0.8,
+          duration: 0.6,
           ease: "power2.inOut",
           onComplete: () => {
             if (loaderRef.current) loaderRef.current.style.display = "none";
@@ -92,9 +93,35 @@ export default function CanvasSequence() {
       }
     };
 
+    // Draw the closest available frame to the requested one
+    const drawClosestFrame = () => {
+      const targetFrame = Math.round(sequence.frame);
+      // Try the exact frame first
+      if (frames[targetFrame]) {
+        if (lastDrawnFrame !== targetFrame) {
+          drawImageProp(context, frames[targetFrame]);
+          lastDrawnFrame = targetFrame;
+        }
+        return;
+      }
+      // Fall back to nearest loaded frame
+      for (let offset = 1; offset < FRAME_COUNT; offset++) {
+        if (targetFrame - offset >= 0 && frames[targetFrame - offset]) {
+          drawImageProp(context, frames[targetFrame - offset]);
+          lastDrawnFrame = targetFrame - offset;
+          return;
+        }
+        if (targetFrame + offset < FRAME_COUNT && frames[targetFrame + offset]) {
+          drawImageProp(context, frames[targetFrame + offset]);
+          lastDrawnFrame = targetFrame + offset;
+          return;
+        }
+      }
+    };
+
     const initAnimation = () => {
-      if (scrollTriggerInit) return;
-      scrollTriggerInit = true;
+      if (animationStarted) return;
+      animationStarted = true;
 
       gsap.to(sequence, {
         frame: FRAME_COUNT - 1,
@@ -106,43 +133,61 @@ export default function CanvasSequence() {
           end: "bottom bottom",
           scrub: 0.5,
         },
-        onUpdate: () => {
-          drawImageProp(context, frames[sequence.frame]);
-        },
+        onUpdate: drawClosestFrame,
       });
 
       window.addEventListener("resize", () => {
-        if (frames[sequence.frame]) {
-          drawImageProp(context, frames[sequence.frame]);
+        if (frames[Math.round(sequence.frame)]) {
+          drawImageProp(context, frames[Math.round(sequence.frame)]);
         }
       });
     };
 
-    // Load first frame immediately to show background fast
-    const firstImg = new Image();
-    firstImg.src = `${FRAME_PREFIX}${pad(1)}${FRAME_SUFFIX}`;
-    firstImg.onload = () => {
-      frames[0] = firstImg;
-      imagesLoaded++;
-      setProgress(Math.round((1 / FRAME_COUNT) * 100));
-      drawImageProp(context, firstImg);
-      fadeOutLoader();
-
-      // Load remaining frames in background
-      for (let i = 2; i <= FRAME_COUNT; i++) {
+    // Load frames in batches — first 30 fast (for quick scroll response),
+    // then the rest fills in
+    const loadFrame = (i) => {
+      return new Promise((resolve) => {
         const img = new Image();
         img.src = `${FRAME_PREFIX}${pad(i)}${FRAME_SUFFIX}`;
         img.onload = () => {
           frames[i - 1] = img;
           imagesLoaded++;
           setProgress(Math.round((imagesLoaded / FRAME_COUNT) * 100));
-
-          if (imagesLoaded === FRAME_COUNT) {
-            initAnimation();
-          }
+          resolve();
         };
+        img.onerror = () => {
+          imagesLoaded++;
+          resolve();
+        };
+      });
+    };
+
+    const loadSequence = async () => {
+      // Load frame 1 first — show it immediately
+      await loadFrame(1);
+      drawImageProp(context, frames[0]);
+      fadeOutLoader();
+      initAnimation();
+
+      // Load frames 2-30 quickly (parallel batch) for fast scroll feedback
+      const firstBatch = [];
+      for (let i = 2; i <= 30; i++) {
+        firstBatch.push(loadFrame(i));
+      }
+      await Promise.all(firstBatch);
+
+      // Load remaining frames in small parallel batches
+      const BATCH_SIZE = 10;
+      for (let start = 31; start <= FRAME_COUNT; start += BATCH_SIZE) {
+        const batch = [];
+        for (let i = start; i < Math.min(start + BATCH_SIZE, FRAME_COUNT + 1); i++) {
+          batch.push(loadFrame(i));
+        }
+        await Promise.all(batch);
       }
     };
+
+    loadSequence();
 
     return () => {
       window.removeEventListener("resize", updateDimensions);
