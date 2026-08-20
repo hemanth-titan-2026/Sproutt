@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ShieldCheck } from "lucide-react";
+import { AlertTriangle, ShieldCheck } from "lucide-react";
 
 import { siteConfig } from "@/lib/site-config";
 import styles from "../content.module.css";
@@ -29,6 +29,17 @@ export default function PrivacyPage() {
       </section>
 
       <main className={styles.body}>
+        <div className={styles.callout + " " + styles.calloutWarn}>
+          <AlertTriangle size={18} className={styles.calloutIcon} aria-hidden="true" />
+          <span>
+            <strong>Draft — needs legal review before launch.</strong> This is an
+            accurate description of how Sproutt handles data, written by your
+            developer, not a lawyer. Have a qualified advisor review it, and fill
+            in the company details in{" "}
+            <code>src/lib/site-config.ts</code>, before you publish.
+          </span>
+        </div>
+
         <div className={styles.prose}>
           <h2>Who we are</h2>
           <p>
