@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import styles from "./CanvasSequence.module.css";
@@ -19,14 +19,13 @@ function pad(number) {
 
 export default function CanvasSequence() {
   const canvasRef = useRef(null);
-  const [loaded, setLoaded] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
-    const frames = [];
-    let imagesLoaded = 0;
+    // Store loaded images — null means not yet loaded
+    const frames = new Array(FRAME_COUNT).fill(null);
+    let sequence = { frame: 0 };
 
     const updateDimensions = () => {
       canvas.width = window.innerWidth;
@@ -36,112 +35,91 @@ export default function CanvasSequence() {
     updateDimensions();
     window.addEventListener("resize", updateDimensions);
 
-    const drawImageProp = (ctx, img, x, y, w, h, offsetX, offsetY) => {
-      if (arguments.length === 2) {
-        x = y = 0;
-        w = ctx.canvas.width;
-        h = ctx.canvas.height;
-      }
-      offsetX = typeof offsetX === "number" ? offsetX : 0.5;
-      offsetY = typeof offsetY === "number" ? offsetY : 0.5;
-      if (offsetX < 0) offsetX = 0;
-      if (offsetY < 0) offsetY = 0;
-      if (offsetX > 1) offsetX = 1;
-      if (offsetY > 1) offsetY = 1;
+    const drawImageCover = (img) => {
+      if (!img) return;
+      const w = canvas.width;
+      const h = canvas.height;
+      const iw = img.width;
+      const ih = img.height;
 
-      let iw = img.width,
-        ih = img.height,
-        r = Math.min(w / iw, h / ih),
-        nw = iw * r,
-        nh = ih * r,
-        cx, cy, cw, ch, ar = 1;
-
+      let r = Math.min(w / iw, h / ih);
+      let nw = iw * r;
+      let nh = ih * r;
+      let ar = 1;
       if (nw < w) ar = w / nw;
       if (Math.abs(ar - 1) < 1e-14 && nh < h) ar = h / nh;
       nw *= ar;
       nh *= ar;
 
-      cw = iw / (nw / w);
-      ch = ih / (nh / h);
+      const cw = iw / (nw / w);
+      const ch = ih / (nh / h);
+      const cx = (iw - cw) * 0.5;
+      const cy = (ih - ch) * 0.5;
 
-      cx = (iw - cw) * offsetX;
-      cy = (ih - ch) * offsetY;
-
-      if (cx < 0) cx = 0;
-      if (cy < 0) cy = 0;
-      if (cw > iw) cw = iw;
-      if (ch > ih) ch = ih;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, cx, cy, cw, ch, x, y, w, h);
+      context.clearRect(0, 0, w, h);
+      context.drawImage(img, cx, cy, cw, ch, 0, 0, w, h);
     };
 
-    // Load ALL frames in parallel — browser handles concurrency
-    for (let i = 1; i <= FRAME_COUNT; i++) {
-      const img = new Image();
-      img.src = `${FRAME_PREFIX}${pad(i)}${FRAME_SUFFIX}`;
-      img.onload = () => {
-        imagesLoaded++;
-        setProgress(Math.round((imagesLoaded / FRAME_COUNT) * 100));
-        if (imagesLoaded === FRAME_COUNT) {
-          setLoaded(true);
-          drawImageProp(context, frames[0]);
-          initAnimation();
-        }
-      };
-      frames.push(img);
-    }
+    // Find the nearest loaded frame to the target
+    const getNearestFrame = (target) => {
+      if (frames[target]) return frames[target];
+      // Search outward from target
+      for (let offset = 1; offset < FRAME_COUNT; offset++) {
+        if (target - offset >= 0 && frames[target - offset]) return frames[target - offset];
+        if (target + offset < FRAME_COUNT && frames[target + offset]) return frames[target + offset];
+      }
+      return null;
+    };
 
-    let sequence = { frame: 0 };
+    const drawCurrentFrame = () => {
+      const target = Math.round(sequence.frame);
+      const img = getNearestFrame(target);
+      if (img) drawImageCover(img);
+    };
 
-    const initAnimation = () => {
-      gsap.to(sequence, {
-        frame: FRAME_COUNT - 1,
-        snap: "frame",
-        ease: "none",
-        scrollTrigger: {
-          trigger: document.body,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.5,
-        },
-        onUpdate: () => {
-          drawImageProp(context, frames[sequence.frame]);
-        },
-      });
+    // Start scroll animation immediately — draws whatever is available
+    gsap.to(sequence, {
+      frame: FRAME_COUNT - 1,
+      snap: "frame",
+      ease: "none",
+      scrollTrigger: {
+        trigger: document.body,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 0.5,
+      },
+      onUpdate: drawCurrentFrame,
+    });
 
-      window.addEventListener("resize", () => {
-        if (frames[sequence.frame]) {
-          drawImageProp(context, frames[sequence.frame]);
-        }
-      });
+    window.addEventListener("resize", drawCurrentFrame);
+
+    // Load frame 1 first, draw it immediately
+    const firstImg = new Image();
+    firstImg.src = `${FRAME_PREFIX}${pad(1)}${FRAME_SUFFIX}`;
+    firstImg.onload = () => {
+      frames[0] = firstImg;
+      drawImageCover(firstImg);
+
+      // Now load all remaining frames in parallel — browser handles concurrency
+      for (let i = 2; i <= FRAME_COUNT; i++) {
+        const img = new Image();
+        img.src = `${FRAME_PREFIX}${pad(i)}${FRAME_SUFFIX}`;
+        img.onload = () => {
+          frames[i - 1] = img;
+        };
+      }
     };
 
     return () => {
       window.removeEventListener("resize", updateDimensions);
+      window.removeEventListener("resize", drawCurrentFrame);
       ScrollTrigger.getAll().forEach((t) => t.kill());
     };
   }, []);
 
   return (
-    <>
-      {!loaded && (
-        <div className={styles.loader}>
-          <div className={styles.loaderContent}>
-            <div className={styles.loaderText}>Planting Seed...</div>
-            <div className={styles.progressBarWrapper}>
-              <div
-                className={styles.progressBarFill}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className={styles.progressPercent}>{progress}%</div>
-          </div>
-        </div>
-      )}
-      <div className={styles.fixedContainer}>
-        <canvas ref={canvasRef} className={styles.canvas} />
-      </div>
-    </>
+    <div className={styles.fixedContainer}>
+      <canvas ref={canvasRef} className={styles.canvas} />
+    </div>
   );
 }
